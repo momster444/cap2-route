@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+	<head>
+    <title>asd</title>
+    <% include _head %>
+    <title>홈 화면</title>
+	</head>
+	<body>
+    <% include _navbar %>
+    <div class="backimage">
+      <div class="front-filter">
+        <div class="container">
+          <form action='/place'>
+            <h1 class='text-center mb-md-4'>여행 일정 짜기</h1>
+            <div class='form-row justify-content-center'>
+              <div class='col-md-3'>
+                <% include components/select-do %>
+              </div>
+              <div class='col-md-3'>
+                <% include components/select-si %>
+              </div>
+              <div class='col-md-1'>
+                <div class='d-none d-md-block'>
+                  <button type='submit' class='btn btn-primary'>
+                    <i class='fas fa-search'></i>
+                  </button>
+                </div>
+                <div class='d-block d-sm-none'>
+                  <button type='submit' class='btn btn-primary'>
+                    <i class='fas fa-search'></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <% include _scripts %>
+    <script type='text/javascript' src='/public/js/select-city.js'></script>
+    <script>
+      $(document).ready(function() {
+        changeDO('<%=DO%>', true);
+      });
+    </script>
+	</body>
+</html>

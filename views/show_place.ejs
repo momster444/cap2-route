@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <% include _head %>
+    <style>
+      .map-wrapper {
+        position: absolute !important;
+        width: 100%;
+        height: 100%;
+        z-index: 0 !important;
+        margin-left: -15px;
+        height: calc(100vh - 56px);
+      }
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+      #search-form {
+        margin-top: 15px;
+      }
+
+      .marker-elem.hover {
+        background-color: #4CAF50;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <% include _navbar %>
+    <div id='basket' class="picked-row">
+      <div class="picked-col-start">
+        <a href="#" data-toggle="popover" class="label-in-div" data-html="true" data-content="<button class='start-on-click'>출발지</button> <button class='finish-on-click'>도착지</button>" data-placement="bottom" data-toggle="popover" class="label-in-div" data-trigger="focus">출발지</a>
+        <a href="#" class="close-thik"></a>
+      </div>
+      <div class="picked-col">
+        <a href="#" data-toggle="popover" class="label-in-div" data-html="true" data-content="<button class='start-on-click'>출발지</button> <button class='finish-on-click'>도착지</button>" data-placement="bottom" data-toggle="popover" class="label-in-div" data-trigger="focus">중간지점</a>
+        <a href="#" class="close-thik"></a>
+      </div>
+      <div class="picked-col-finish">
+        <a href="#" data-toggle="popover" class="label-in-div" data-html="true" data-content="<button class='start-on-click'>출발지</button> <button class='finish-on-click'>도착지</button>" data-placement="bottom" data-toggle="popover" class="label-in-div" data-trigger="focus">도착지</a>
+        <a href="#" class="close-thik"></a>
+      </div>
+      <a href='/multipath' class='btn-create-route'>경로생성</a>
+    </div>
+    <div class='container-fluid h-100-ex-nav'>
+      <div class='row h-100'>
+        <div class='col-md-8'>
+          <div class='map-wrapper'>
+            <div id='map'></div>
+          </div>
+        </div>
+        <div class='col-md-4 d-flex flex-column'>
+          <ul class="nav nav-tabs mb-3">
+            <li class="nav-item">
+              <a class="nav-link active" href='#'>추천</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href='/search'>검색</a>
+            </li>
+          </ul>
+          <form method='GET' action='/place' style='z-index: 100;'>
+            <div class='form-row d-flex flex-row'>
+              <div style='flex: 5'>
+                <% include components/select-do %>
+              </div>
+              <div style='flex: 5'>
+                <% include components/select-si %>
+              </div>
+              <div style='flex: 5'>
+                <% include components/select-contenttypeid %>
+              </div>
+              <div style='flex: 1'>
+                <button type='submit' class='btn btn-primary btn-lg'>
+                  <i class='fas fa-search'></i>
+                </button>
+              </div>
+            </div>
+          </form>
+          <div class='list-group list-group-flush place-list'>
+            <% for (let i = 0; i < places.length; i++) { %>
+            <a href='#' class='list-group-item marker-elem' data-marker-index='<%=i%>'>
+              <div class='d-flex w-100 justify-content-between flex-column'>
+                <h6 class='mb-1'><%- places[i].title %></h6>
+                <small><%- places[i].address %></small>
+                <small><%= places[i].contenttypename %></small>
+                <button onclick="onClickBtnCart(event, '<%=places[i]._id%>')">담아두기</button>
+              </div>
+            </a>
+            <% } %>
+          </div>
+          <div class="pagination">
+            <a href="/place?DO=<%=DO%>&SI=<%=SI%>&page=1">&laquo;</a>
+            <a href="/place?DO=<%=DO%>&SI=<%=SI%>&page=1" >1</a>
+            <a href="/place?DO=<%=DO%>&SI=<%=SI%>&page=2" >2</a>
+            <a href="/place?DO=<%=DO%>&SI=<%=SI%>&page=3" class="active">3</a>
+            <a href="/place?DO=<%=DO%>&SI=<%=SI%>&page=4" >4</a>
+            <a href="/place?DO=<%=DO%>&SI=<%=SI%>&page=5" >5</a>
+            <a href="/place?DO=<%=DO%>&SI=<%=SI%>&page=1">&raquo;</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <% include _scripts %>
+  <script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?clientId=<%=naverClientID%>&callback=initMap&submodules=geocoder"></script>
+  <script type='text/javascript' src='/public/js/select-city.js'></script>
+  <script type='text/javascript' src='/public/js/basket.js'></script>
+  <script>
+    $('#basket').hide();
+    var map = null;
+    var markers = [];
+    var items = <%- JSON.stringify(places)%>;
+
+    function markerClickHandler(index) {
+      for (var i = 0; i < items.length; i++) {
+        if (i == index) {
+          $('a.marker-elem[data-marker-index=' + i + ']').addClass('hover');
+          $('a.marker-elem[data-marker-index=' + i + ']')[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          $('a.marker-elem[data-marker-index=' + i + ']').removeClass('hover');
+        }
+      }
+    }
+
+    function convertToTM(mapx, mapy) {
+      var point = new naver.maps.LatLng(mapx, mapy);
+      return naver.maps.TransCoord.fromLatLngToTM128(point);
+    }
+
+    function convertPosition(mapx, mapy) {
+      var point = new naver.maps.Point(mapx, mapy);
+      var position = naver.maps.TransCoord.fromTM128ToLatLng(point);
+      return position;
+    }
+
+    function initMap() {
+      map = new naver.maps.Map('map', {
+        center: new naver.maps.LatLng(37.3595704, 127.105399),
+        zoom: 14
+      });
+      if (!items.length) {
+        return;
+      }
+
+      var minx, maxx, miny, maxy;
+      items.forEach(function(item, index) {
+        var tm128 = convertToTM(item.map_y, item.map_x);
+        var mapx = tm128.x;
+        var mapy = tm128.y;
+        console.log(mapx, mapy);
+        // initialize minx, maxx, miny, maxy
+        if (!minx) { minx = mapx; }
+        if (!maxx) { maxx = mapx; }
+        if (!miny) { miny = mapy; }
+        if (!maxy) { maxy = mapy; }
+
+        minx = Math.min(minx, mapx);
+        maxx = Math.max(maxx, mapx);
+        miny = Math.min(miny, mapy);
+        maxy = Math.max(maxy, mapy);
+
+        var position = convertPosition(mapx, mapy);
+        markers[index] = new naver.maps.Marker({
+          position: position,
+          map: map
+        });
+        naver.maps.Event.addListener(markers[index], 'click', markerClickHandler.bind(null, index));
+      });
+      // calculate center position, zoom
+
+      var w = (maxx - minx);
+      var h = (maxy - miny);
+      var centerx = minx + w / 2;
+      var centery = miny + h / 2;
+      var centerPosition = convertPosition(centerx, centery);
+
+      var baseDist = 12.5; // 12.5m;
+      var maxZoom = 14;
+      var minZoom = 1;
+      var zoom = Math.max(maxZoom - parseInt(Math.log2(Math.max(w, h) / (baseDist * 4))), minZoom);
+      map.setZoom(zoom);
+      map.setCenter(centerPosition);
+
+    }
+
+    var basket = null;
+    function onClickBtnCart(e, place) {
+      e.preventDefault();
+      basket.updateBasket({
+        place: place,
+      });
+    }
+    $(document).ready(function() {
+      changeDO('<%=DO%>', true);
+      basket = new Basket('#basket', {
+        startObject: '.picked-col-start',
+        normalObject: '.picked-col',
+        finishObject: '.picked-col-finish',
+        startOnClick: '.start-on-click',
+        finishOnClick: '.finish-on-click',
+        closeOnClick: '.close-thik',
+      });
+      basket.init();
+    });
+  </script>
+  </body>
+</html>

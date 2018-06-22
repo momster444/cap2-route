@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <% include _head %>
+  </head>
+  <body>
+    <% include _navbar %>
+    <div class='container'>
+      <div class='page-header text-center'>
+        <h1>여행 일정</h1>
+      </div>
+      <div class='row'>
+        <% for (var i = 0; i < routes.length; i++) { %>
+        <div class='col-sm-6'>
+          <div class='well'>
+            <h3> <%= routes[i] %> </h3>
+            <p>
+              <a href='/multipath/<%=routes[i]%>'>경로 보기</a>
+            </p>
+          </div>
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </body>
+</html>

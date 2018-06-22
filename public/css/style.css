@@ -1,0 +1,209 @@
+html, body {
+  height: 100%;
+}
+@font-face {
+font-family: 'Nanum Gothic'; font-style: normal; font-weight: 400;
+src: url('../public/NanumGothic-Regular.eot');
+src: local('NanumGothic'),
+  url('../public/NanumGothic-Regular.eot?#iefix') format('embedded-opentype'),
+  url('../public/NanumGothic-Regular.woff2') format('woff2'),
+  url('../public/NanumGothic-Regular.woff') format('woff'),
+  url('../public/NanumGothic-Regular.ttf') format('truetype');
+}
+  
+h1, p, a { font-family: 'Nanum Gothic' }
+
+.front-filter {
+  top: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  width: 100%;
+  height: 100%;
+  padding-top: 200px;
+  min-height: 400px;
+}
+.backimage {
+  background-image: url('/public/background.JPG');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  width: 100%;
+  height: calc(100% - 56px);
+  color: white;
+  min-height: 400px;
+}
+
+.social-login {
+  font-size: 50px;
+  margin: 10px;
+}
+.social-login:hover {
+  text-decoration: none;
+}
+.social-login.twitter {
+  color: rgb(45, 170, 226);
+}
+.social-login.google-plus {
+  color: rgb(222, 74, 58);
+}
+.social-login.facebook {
+  color: rgb(59, 89, 151);
+}
+
+/* height: 100% except navbar */
+.h-100-ex-nav {
+  height: calc(100% - 56px);
+}
+
+.place-list {
+  height: 100%;
+  overflow: scroll;
+}
+
+.d-flex .nav-tabs,
+.d-flex .nav-item,
+.d-flex .nav-link {
+  min-height: 42px;
+}
+
+.label-in-div {
+  color: #fff;
+}
+
+.label-in-div:hover {
+  color: #aaa;
+}
+
+.picked-row {
+  display: grid;
+  grid-gap: 10px;
+  grid-template-columns: auto auto auto auto auto;
+  background-color: #fff;
+  color: #444;
+  padding: 20px;
+}
+
+.picked-col {
+  background-color: #444;
+  color: #fff;
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 100%;
+  position: relative;
+}
+
+.picked-col-start {
+  background-color: #822;
+  color: #fff;
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 100%;
+  position: relative;
+}
+
+.picked-col-finish {
+  background-color: #228;
+  color: #fff;
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 100%;
+  position: relative;
+}
+
+.btn-create-route {
+  background-color: #ddd;
+  color: #222;
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 100%;
+}
+
+.btn-create-route:hover
+{
+  background-color: #777;
+  color: #ddd;
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 100%;
+}
+
+/* Close Button */
+
+[class*='close-'] {
+  color: #fff;
+  font: 14px/100% arial, sans-serif;
+  position: absolute;
+  right: 5px;
+  text-decoration: none;
+  text-shadow: 0 1px 0 #fff;
+  top: 5px;
+}
+
+[class*='close-']:hover {
+  color: #aaa;
+  font: 14px/100% arial, sans-serif;
+  position: absolute;
+  right: 5px;
+  text-decoration: none;
+  text-shadow: 0 1px 0 #fff;
+  top: 5px;
+}
+
+.close-classic:after {
+  content: 'X'; /* ANSI X letter */
+}
+
+.close-thin:after {
+  content: '×'; /* UTF-8 symbol */
+}
+
+.close-thik:after {
+  content: '✖'; /* UTF-8 symbol */
+}
+
+.pagination {
+    display: inline-block;
+    margin : 5px;
+}
+
+.pagination a.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.pagination a {
+  float: left;
+  padding: 8px 16px;
+  text-decoration: none;
+  transition: background-color .3s;
+  border-radius: 5px;
+}
+
+.pagination a:hover:not(.active) {
+  background-color: #ddd;
+  border-radius: 5px;
+}
+
+.form-logo {
+  width: 100%;
+  padding: 0 60px;
+}
+.navbar-logo {
+  height: 40px;
+}
+
+.trans-elem {
+  cursor: pointer;
+}
+
+.trans-elem.hover {
+  background-color: #4CAF50;
+}
+
+.text-blue {
+  color: blue;
+}
+
+.text-red {
+  color: red;
+}

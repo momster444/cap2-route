@@ -1,0 +1,36 @@
+{
+  "name": "route",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "./node_modules/.bin/supervisor -i public,views app.js",
+    "insert-data": "node ./scripts/upload_place/upload-place.js && node ./scripts/upload_route/upload-route.js && node ./scripts/place_rank/place-rank.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "app-module-path": "^2.2.0",
+    "axios": "^0.18.0",
+    "bluebird": "^3.5.1",
+    "body-parser": "^1.18.3",
+    "connect-flash": "^0.1.1",
+    "cookie-parser": "^1.4.3",
+    "ejs": "^2.6.1",
+    "express": "^4.16.3",
+    "express-error-handler": "^1.1.0",
+    "express-session": "^1.15.6",
+    "mongoose": "^5.1.1",
+    "passport": "^0.4.0",
+    "passport-facebook": "^2.1.1",
+    "passport-local": "^1.0.0",
+    "require.async": "^0.1.1",
+    "session-file-store": "^1.2.0",
+    "underscore": "^1.9.1"
+  },
+  "devDependencies": {
+    "pagerank.js": "^1.0.2",
+    "supervisor": "^0.12.0"
+  }
+}

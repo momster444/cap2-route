@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <% include _head %>
+    <style>
+      .map-wrapper {
+        position: absolute !important;
+        width: 100%;
+        height: 100%;
+        z-index: 0 !important;
+        margin-left: -15px;
+        height: calc(100vh - 56px);
+      }
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+      .spinner {
+        position: absolute;
+        display: flex;
+        justify-content: center;
+        height: 100%;
+        width: 100%;
+        top: 0;
+        left: 0;
+        background-color: rgba(255, 255, 255, 0.8);
+        z-index: 100;
+      }
+      .spinner-content {
+        align-self: center;
+        font-size: 50px;
+      }
+      .share-btn {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <% include _navbar %>
+    <div class='spinner'>
+      <div class='spinner-content'>
+        <i class="fas fa-spinner fa-spin"></i>
+        <div>
+          <span style='font-size: 15px;'>
+            loading...
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class='container-fluid h-100-ex-nav'>
+      <div class='row h-100'>
+        <div class='col-md-8'>
+          <div class='map-wrapper'>
+            <div id='map'></div>
+          </div>
+        </div>
+        <div class='col-md-4 trans-info place-list list-group list-group-flush'>
+        </div>
+        <button class='btn btn-success share-btn'>공유하기</button>
+      </div>
+    </div>
+    <% include _scripts %>
+    <script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?clientId=<%=naverClientID%>&callback=initMap"></script>
+    <script>
+      var map = null;
+      var polylines = [];
+      function initMap() {
+        map = new naver.maps.Map('map', {
+          center: new naver.maps.LatLng(37.3595704, 127.105399),
+          zoom: 14,
+        });
+      }
+
+      function draw_right_side_trans_info(dist_info_mat, perm, places) {
+        var trans_view = $('.trans-info');
+        for (var i = 0; i < perm.length - 1; i++) {
+          var obj = $('<div class="trans-elem list-group-item"></div>');
+          obj.click(function(e) {
+            var polyline = polylines[this.i][0];
+            if (!$('.trans-elem').eq(this.i).hasClass('hover')) {
+              $('.trans-elem').removeClass('hover');
+              for (var j = 0; j < polylines.length; j++) {
+                for (var k = 0; polylines[j] && k < polylines[j].length; k++) {
+                  polylines[j][k].setMap(null);
+                }
+              }
+              for (var j = 0; j < polylines[this.i].length; j++) {
+                polylines[this.i][j].setMap(map);
+              }
+              $(e.currentTarget).addClass('hover');
+            } else {
+              for (var j = 0; j < polylines.length; j++) {
+                for (var k = 0; polylines[j] && k < polylines[j].length; k++) {
+                  polylines[j][k].setMap(map);
+                }
+              }
+              $('.trans-elem').removeClass('hover');
+            }
+          }.bind({i: i}));
+          var content = $('<div class="d-flex w-100 justify-content-between flex-column"></div>');
+          content.append('<h6 class="mb-1">' + 
+              '<span class="text-blue">' +
+                places[perm[i]].title +
+              '</span> > ' + 
+              '<span class="text-red">' +
+                places[perm[i+1]].title +
+              '</span>' + 
+            '</h6>'
+          );
+
+          if (!dist_info_mat[perm[i]][perm[i+1]]) {
+            content.append('경로가 없습니다');
+            obj.append(content);
+            trans_view.append(obj);
+            continue;
+          }
+          var subpath = dist_info_mat[perm[i]][perm[i+1]].path[0].subPath;
+          var trans = dist_info_mat[perm[i]][perm[i+1]].path[0];
+          content.append('<small>' +
+            trans.info.firstStartStation + ' > ' + trans.info.lastEndStation +
+            '</small>'
+          );
+
+          var traffic = $('<div></div>');
+          subpath.forEach(function(sub) {
+            if (sub.trafficType == 3 && sub.sectionTime != 0) {
+              traffic.append('<div>도보 ' + sub.sectionTime + '분 (' + sub.distance + 'm)' + '</div>');
+            } else if (sub.trafficType == 1) {
+              traffic.append('<div>지하철 ' + sub.startName + ' > ' + sub.endName + '(' + sub.lane[0].name + ')');
+            } else if (sub.trafficType == 2) {
+              traffic.append('<div>버스 ' + sub.lane[0].busNo + '(' + sub.startName + ' > ' + sub.endName + ')');
+            }
+          });
+          content.append(traffic);
+          obj.append(content);
+          trans_view.append(obj);
+        }
+      }
+
+      function shortestPath(dist_info_mat, places, start_idx, end_idx) {
+
+        var perm_ans = places.map(function(place, index) { return index; });
+        var lane_count = 0;
+        var lane_info = [];
+        var spin_end = function() {
+          draw_markers_and_lanes(places, perm_ans, lane_info, start_idx, end_idx);
+          $('.spinner').hide();
+          perm_ans = perm_ans.map(function(perm) {
+            return places[perm]._id;
+          });
+          $.ajax({
+            method: 'PUT',
+            url: '/multipath',
+            data: {
+              'places': perm_ans,
+            },
+          });
+        }
+
+        draw_right_side_trans_info(dist_info_mat, perm_ans, places);
+        for (var i = 0; i < perm_ans.length - 1; i++) {
+          if (!dist_info_mat[perm_ans[i]][perm_ans[i+1]]) {
+            lane_count += 1;
+            spin_end();
+            continue;
+          }
+          $.ajaxq('lane', {
+            url: '/api/loadlane',
+            data: {
+              mapObject: dist_info_mat[perm_ans[i]][perm_ans[i+1]].path[0].info.mapObj,
+            },
+          })
+            .then(function(res) {
+              console.log(res);
+              lane_info[this.i] = res;
+              lane_count += 1;
+              if (lane_count == places.length - 1) {
+                spin_end();
+              }
+            }.bind({ i: i }));
+        }
+      }
+      function draw_markers_and_lanes(places, perm_ans, lane_info, start_idx, end_idx) {
+        var boundary_top;
+        var boundary_bottom;
+        var boundary_left;
+        var boundary_right;
+        for (var i = 0; i < lane_info.length; i++) {
+          drawNaverMarker(places[i].map_x, places[i].map_y) ;
+          drawNaverMarker(places[i+1].map_x, places[i+1].map_y);
+          if (!lane_info[i]) {
+            continue;
+          }
+          drawNaverPolyLine(i, lane_info[i], places[perm_ans[i]], places[perm_ans[i+1]]);
+          if (lane_info[i].boundary) {
+            if (i == 0) {
+              boundary_top = lane_info[i].boundary.top;
+              boundary_bottom = lane_info[i].boundary.bottom;
+              boundary_left = lane_info[i].boundary.left;
+              boundary_right = lane_info[i].boundary.right;
+            }
+            boundary_top = Math.max(boundary_top, lane_info[i].boundary.top);
+            boundary_right = Math.max(boundary_right, lane_info[i].boundary.right);
+            boundary_left = Math.min(boundary_left, lane_info[i].boundary.left);
+            boundary_bottom = Math.min(boundary_bottom, lane_info[i].boundary.bottom);
+          }
+        }
+        if (boundary_top) {
+          var boundary = new naver.maps.LatLngBounds(
+            new naver.maps.LatLng(boundary_top, boundary_left),
+            new naver.maps.LatLng(boundary_bottom, boundary_right)
+          );
+          console.log(boundary);
+          map.panToBounds(boundary);
+        }
+      }
+
+      function drawNaverMarker(x, y) {
+        var marker = new naver.maps.Marker({
+          position: new naver.maps.LatLng(y, x),
+          map: map
+        });
+      }
+      function drawNaverPolyLine(idx, data, start_place, end_place) {
+        var lineArray;
+        var lanes = [];
+        var startP = new naver.maps.Polyline({
+          map: map,
+          path: [
+            new naver.maps.LatLng(start_place.map_y, start_place.map_x),
+            new naver.maps.LatLng(data.lane[0].section[0].graphPos[0].y, data.lane[0].section[0].graphPos[0].x)
+          ],
+          strokeWeight: 3,
+          strokeColor: 'blue',
+        });
+
+        var lastI = data.lane.length - 1;
+        var lastJ = data.lane[lastI].section.length - 1;
+        var lastK = data.lane[lastI].section[lastJ].graphPos.length - 1;
+        var endP = new naver.maps.Polyline({
+          map: map,
+          path: [
+            new naver.maps.LatLng(data.lane[lastI].section[lastJ].graphPos[lastK].y, data.lane[lastI].section[lastJ].graphPos[lastK].x),
+            new naver.maps.LatLng(end_place.map_y, end_place.map_x),
+          ],
+          strokeWeight: 3,
+          strokeColor: 'red',
+        });
+        lanes.push(startP);
+        lanes.push(endP);
+        for (var i = 0; i < data.lane.length; i++) {
+          for (var j = 0; j < data.lane[i].section.length; j++) {
+            lineArray = null;
+            lineArray = new Array();
+            for (var k = 0; k < data.lane[i].section[j].graphPos.length; k++) {
+              lineArray.push(new naver.maps.LatLng(data.lane[i].section[j].graphPos[k].y, data.lane[i].section[j].graphPos[k].x));
+            }
+            if (data.lane[i].type == 1) {
+              var polyline = new naver.maps.Polyline({
+                map: map,
+                path: lineArray,
+                strokeWeight: 3,
+                strokeColor: '#003499',
+              });
+            } else if (data.lane[i].type == 2) {
+              var polyline = new naver.maps.Polyline({
+                map: map,
+                path: lineArray,
+                strokeWeight: 3,
+                strokeColor: '#37b42d',
+              });
+            } else {
+              var polyline = new naver.maps.Polyline({
+                map: map,
+                path: lineArray,
+                strokeWeight: 3,
+              });
+            }
+            lanes.push(polyline);
+          }
+        }
+        polylines[idx] = lanes;
+      }
+
+      function permute(permutation) {
+        var length = permutation.length;
+        var result = [permutation.slice()];
+        var c = new Array(length).fill(0);
+        var i = 1;
+        var k, p;
+
+        while (i < length) {
+          if (c[i] < i) {
+            k = i % 2 && c[i];
+            p = permutation[i];
+            permutation[i] = permutation[k];
+            permutation[k] = p;
+            ++c[i];
+            i = 1;
+            result.push(permutation.slice());
+          }
+          else {
+            c[i] = 0;
+            ++i;
+          }
+        }
+        return result;
+      }
+
+      $(document).ready(function() {
+        $.ajax({
+          url: '/route/<%=routeId%>',
+          method: 'get',
+        }).done(function(res) {
+          var distance_info_matrix = [];
+          var total_dist_count = 0;
+
+          // init distance/info matrix
+          for (var i = 0; i < res.places.length; i++) {
+            distance_info_matrix[i] = [];
+          }
+
+          var start_idx = 0;
+          var end_idx = res.places.length - 1;
+          // get start/end place index
+
+          for (var i = 0; i < res.places.length - 1; i++) {
+            $.ajaxq('distanceMatrixQueueForNode' + i, {
+              url: '/api/path',
+              data: {
+                start: res.places[i]._id,
+                end: res.places[i+1]._id,
+              },
+            })
+              .then(function (res2) {
+                distance_info_matrix[this.i][this.i + 1] = res2.result;
+                total_dist_count += 1;
+                if (total_dist_count == res.places.length - 1) {
+                  console.log(distance_info_matrix);
+                  shortestPath(distance_info_matrix, res.places, start_idx, end_idx);
+                }
+              }.bind({ i: i }));
+          }
+          // res.start
+          // res.end
+          // res.places 를 이용하여 optimal multi path 를 구해야함
+        });
+      });
+    </script>
+  </body>
+</html>
